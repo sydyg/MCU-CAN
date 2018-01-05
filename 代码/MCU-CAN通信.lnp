@@ -1,0 +1,7 @@
+"STARTUP.obj",
+"main.obj",
+"MCP2515.obj",
+"SPI.obj",
+"UART.obj" 
+TO "MCU-CANÍ¨ÐÅ" 
+RAMSIZE(256) 

@@ -1,0 +1,104 @@
+<html>
+<body>
+<pre>
+<h1>礦ision Build Log</h1>
+<h2>Project:</h2>
+C:\Users\Administrator\Desktop\MCU-CAN通信\代码\MCU-CAN通信.uvproj
+Project File Date:  01/03/2018
+
+<h2>Output:</h2>
+Build target 'MCU-CAN'
+compiling main.c...
+./include/MCP2515.h(37): warning C317: attempt to redefine macro 'TXB0EID0'
+./include/MCP2515.h(38): warning C317: attempt to redefine macro 'TXB0DLC'
+./include/MCP2515.h(39): warning C317: attempt to redefine macro 'TXB0D0'
+./include/MCP2515.h(40): warning C317: attempt to redefine macro 'TXB0D1'
+./include/MCP2515.h(41): warning C317: attempt to redefine macro 'TXB0D2'
+./include/MCP2515.h(42): warning C317: attempt to redefine macro 'TXB0D3'
+./include/MCP2515.h(43): warning C317: attempt to redefine macro 'TXB0D4'
+./include/MCP2515.h(44): warning C317: attempt to redefine macro 'TXB0D5'
+./include/MCP2515.h(45): warning C317: attempt to redefine macro 'TXB0D6'
+./include/MCP2515.h(46): warning C317: attempt to redefine macro 'TXB0D7'
+./include/MCP2515.h(52): warning C317: attempt to redefine macro 'TXB0EID0'
+./include/MCP2515.h(53): warning C317: attempt to redefine macro 'TXB0DLC'
+./include/MCP2515.h(54): warning C317: attempt to redefine macro 'TXB0D0'
+./include/MCP2515.h(55): warning C317: attempt to redefine macro 'TXB0D1'
+./include/MCP2515.h(56): warning C317: attempt to redefine macro 'TXB0D2'
+./include/MCP2515.h(57): warning C317: attempt to redefine macro 'TXB0D3'
+./include/MCP2515.h(58): warning C317: attempt to redefine macro 'TXB0D4'
+./include/MCP2515.h(59): warning C317: attempt to redefine macro 'TXB0D5'
+./include/MCP2515.h(60): warning C317: attempt to redefine macro 'TXB0D6'
+./include/MCP2515.h(61): warning C317: attempt to redefine macro 'TXB0D7'
+compiling MCP2515.c...
+./include/MCP2515.h(37): warning C317: attempt to redefine macro 'TXB0EID0'
+./include/MCP2515.h(38): warning C317: attempt to redefine macro 'TXB0DLC'
+./include/MCP2515.h(39): warning C317: attempt to redefine macro 'TXB0D0'
+./include/MCP2515.h(40): warning C317: attempt to redefine macro 'TXB0D1'
+./include/MCP2515.h(41): warning C317: attempt to redefine macro 'TXB0D2'
+./include/MCP2515.h(42): warning C317: attempt to redefine macro 'TXB0D3'
+./include/MCP2515.h(43): warning C317: attempt to redefine macro 'TXB0D4'
+./include/MCP2515.h(44): warning C317: attempt to redefine macro 'TXB0D5'
+./include/MCP2515.h(45): warning C317: attempt to redefine macro 'TXB0D6'
+./include/MCP2515.h(46): warning C317: attempt to redefine macro 'TXB0D7'
+./include/MCP2515.h(52): warning C317: attempt to redefine macro 'TXB0EID0'
+./include/MCP2515.h(53): warning C317: attempt to redefine macro 'TXB0DLC'
+./include/MCP2515.h(54): warning C317: attempt to redefine macro 'TXB0D0'
+./include/MCP2515.h(55): warning C317: attempt to redefine macro 'TXB0D1'
+./include/MCP2515.h(56): warning C317: attempt to redefine macro 'TXB0D2'
+./include/MCP2515.h(57): warning C317: attempt to redefine macro 'TXB0D3'
+./include/MCP2515.h(58): warning C317: attempt to redefine macro 'TXB0D4'
+./include/MCP2515.h(59): warning C317: attempt to redefine macro 'TXB0D5'
+./include/MCP2515.h(60): warning C317: attempt to redefine macro 'TXB0D6'
+./include/MCP2515.h(61): warning C317: attempt to redefine macro 'TXB0D7'
+SOURCE\MCP2515.C(50): error C202: 'CF1': undefined identifier
+SOURCE\MCP2515.C(52): error C202: 'CF2': undefined identifier
+SOURCE\MCP2515.C(53): error C202: 'CF3': undefined identifier
+compiling UART.c...
+Target not created
+Build target 'MCU-CAN'
+compiling MCP2515.c...
+./include/MCP2515.h(37): warning C317: attempt to redefine macro 'TXB0EID0'
+./include/MCP2515.h(38): warning C317: attempt to redefine macro 'TXB0DLC'
+./include/MCP2515.h(39): warning C317: attempt to redefine macro 'TXB0D0'
+./include/MCP2515.h(40): warning C317: attempt to redefine macro 'TXB0D1'
+./include/MCP2515.h(41): warning C317: attempt to redefine macro 'TXB0D2'
+./include/MCP2515.h(42): warning C317: attempt to redefine macro 'TXB0D3'
+./include/MCP2515.h(43): warning C317: attempt to redefine macro 'TXB0D4'
+./include/MCP2515.h(44): warning C317: attempt to redefine macro 'TXB0D5'
+./include/MCP2515.h(45): warning C317: attempt to redefine macro 'TXB0D6'
+./include/MCP2515.h(46): warning C317: attempt to redefine macro 'TXB0D7'
+./include/MCP2515.h(52): warning C317: attempt to redefine macro 'TXB0EID0'
+./include/MCP2515.h(53): warning C317: attempt to redefine macro 'TXB0DLC'
+./include/MCP2515.h(54): warning C317: attempt to redefine macro 'TXB0D0'
+./include/MCP2515.h(55): warning C317: attempt to redefine macro 'TXB0D1'
+./include/MCP2515.h(56): warning C317: attempt to redefine macro 'TXB0D2'
+./include/MCP2515.h(57): warning C317: attempt to redefine macro 'TXB0D3'
+./include/MCP2515.h(58): warning C317: attempt to redefine macro 'TXB0D4'
+./include/MCP2515.h(59): warning C317: attempt to redefine macro 'TXB0D5'
+./include/MCP2515.h(60): warning C317: attempt to redefine macro 'TXB0D6'
+./include/MCP2515.h(61): warning C317: attempt to redefine macro 'TXB0D7'
+SOURCE\MCP2515.C(50): warning C206: 'MCP2515_Write_Byte': missing function-prototype
+SOURCE\MCP2515.C(50): error C267: 'MCP2515_Write_Byte': requires ANSI-style prototype
+Target not created
+Build target 'MCU-CAN'
+compiling main.c...
+compiling MCP2515.c...
+SOURCE\MCP2515.C(50): warning C206: 'MCP2515_Write_Byte': missing function-prototype
+SOURCE\MCP2515.C(50): error C267: 'MCP2515_Write_Byte': requires ANSI-style prototype
+Target not created
+Build target 'MCU-CAN'
+compiling MCP2515.c...
+linking...
+Program Size: data=53.1 xdata=0 code=1444
+creating hex file from "MCU-CAN通信"...
+"MCU-CAN通信" - 0 Error(s), 0 Warning(s).
+Build target 'MCU-CAN'
+assembling STARTUP.A51...
+compiling main.c...
+compiling MCP2515.c...
+compiling SPI.c...
+compiling UART.c...
+linking...
+Program Size: data=53.1 xdata=0 code=1444
+creating hex file from "MCU-CAN通信"...
+"MCU-CAN通信" - 0 Error(s), 0 Warning(s).

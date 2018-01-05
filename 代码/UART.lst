@@ -1,0 +1,187 @@
+C51 COMPILER V9.02   UART                                                                  01/05/2018 20:43:12 PAGE 1   
+
+
+C51 COMPILER V9.02, COMPILATION OF MODULE UART
+OBJECT MODULE PLACED IN UART.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE source\UART.c BROWSE DEBUG OBJECTEXTEND PRINT(.\UART.lst) OBJECT(UART.obj)
+
+line level    source
+
+   1          #define _SPI_C
+   2          #include"./include/UART.h"
+   3          #include"./include/SPI.h"
+   4          #include"./include/config.h"
+   5          
+   6          static unsigned char UART_Recv_Data;//MCU接收到的来自PC机的一个字节
+   7          static unsigned char UART_Recv_Buff[10]={'\0'};//MCU接收到的来自PC机数据的缓冲区
+   8          static unsigned char cmd_finish=0;//接收PC机命令完成标记
+   9          /*
+  10          *1. 函数名：Uart_Init
+  11          *2. 描述：实现MCU串口的初始化
+  12          *3. 输入：无
+  13          *4. 输出：无
+  14          *5. 返回值：无
+  15          *6. 说明：1.配置串口模式(SCON) 2.配置位定时(TMOD)，定时器1做位定时器
+  16               3.使能串口中断ES 4.使能总中断
+  17          *    每个位时间采样32次，配置完成，打开T1，就可以和PC机正常通信
+  18          */
+  19          void Uart_Init(void)
+  20          {
+  21   1                SCON = 0x50;//模式1，10位数据，无奇偶校验
+  22   1                TMOD = 0x20; //配置定时器为8位重装模式
+  23   1                TH1 = TL1 = 0xfd;//配置采样点，每(256-0xfd)个机器周期溢出一次，T1溢出就对串口线采样
+  24   1            TR1 = 1;//开启定时器1,串口就可以收发数据了
+  25   1                ES = 1;
+  26   1                EA = 1; 
+  27   1      }
+  28          
+  29          /*
+  30          *1.函数名：delaynms
+  31          *2.描述：延时nMs
+  32          *3.输入：n 
+  33          *4.输出：无
+  34          *5.说明：
+  35          */
+  36          void delaynms(unsigned int i)
+  37          {
+  38   1          unsigned int j=100;
+  39   1          while(i--)
+  40   1              {
+  41   2                  while(j--)//内部延时1ms
+  42   2                          _nop_();
+  43   2              }
+  44   1      }
+  45          
+  46          /*
+  47          *1. 函数名：Uart_Send_Byte
+  48          *2. 描述：MCU给PC机发送一字节数据
+  49          *3. 输入：unsigned char data
+  50          *4. 输出：无
+  51          *5. 返回值：无
+  52          *6. 说明：往MCU串口模块的发送缓冲器中写入一字节数据
+  53          */
+  54          void Uart_Send_Byte(unsigned char Data)
+  55          {
+C51 COMPILER V9.02   UART                                                                  01/05/2018 20:43:12 PAGE 2   
+
+  56   1                SBUF = Data;
+  57   1                delaynms(1); //延时2ms，数据写入PC机后再做其他操作
+  58   1      }
+  59          
+  60          /*
+  61          *1. 函数名：UART_Send_Data
+  62          *2. 描述：MCU把从MCP2515_2接收到的数据发送到PC机
+  63          *3. 输入：unsigned char Data[],unsigned char len
+  64          *4. 输出：实际发送的字节数
+  65          *5. 说明：调用Uart_Send_Byte()实现多字节发送
+  66          */
+  67          unsigned char UART_Send_Data(unsigned char Data[],unsigned char len)
+  68          {
+  69   1            int i;
+  70   1                if(len>0)
+  71   1                {
+  72   2                 while(Data[i]!='\0')
+  73   2                     Uart_Send_Byte(Data[i++]);
+  74   2                 return i;
+  75   2                }
+  76   1                return 0;
+  77   1      }
+  78          /*
+  79          *1.函数名：UART_Send_Promt
+  80          *2.描述：向PC机的串口工具打印提示符，进入命令行界面
+  81          *3.输入：unsigned char* 命令提示符
+  82          *4.输出：无
+  83          *5.说明：MCU向PC机打印提示符，然后进入死循环，接收到PC机发来的命令才退出死循环
+  84             退出时，PC机发来的命令已经拷贝到UART缓冲区。
+  85          */
+  86          void UART_Send_Promt(unsigned char* prompt)
+  87          {
+  88   1           while(*prompt!='\0')
+  89   1               {
+  90   2                   SBUF = *prompt;
+  91   2                       delaynms(1); //延时2ms，数据写入PC机后再做其他操作
+  92   2                       ++prompt;
+  93   2               }
+  94   1               /*等待，接收到PC机发来的命令才退出死循环*/
+  95   1               while(1)
+  96   1               {
+  97   2                    if(cmd_finish == 1)
+  98   2                        {
+  99   3                          cmd_finish = 0;
+ 100   3                          break;
+ 101   3                        }
+ 102   2               }
+ 103   1      }
+ 104          
+ 105          /*
+ 106          *1. 函数名：UART_Recv_CMD
+ 107          *2. 描述：把UART命令缓冲区的命令拷贝出去
+ 108          *3. 输入：unsigned char data[]
+ 109          *4. 输出：拷贝的字节数,0表示缓冲区空
+ 110          *5. 说明：规定PC机的命令以'#'结束，从串口输入缓冲器循环接收数据，并检测'#'
+ 111              结束循环。
+ 112          */
+ 113          unsigned char UART_Recv_CMD(unsigned char Data[])
+ 114          {
+ 115   1          int i=0;
+ 116   1              /*缓冲区非空才拷贝*/
+ 117   1              if(UART_Recv_Buff[0]!='\0')
+C51 COMPILER V9.02   UART                                                                  01/05/2018 20:43:12 PAGE 3   
+
+ 118   1              {
+ 119   2                      while(UART_Recv_Buff[i]!='\0')
+ 120   2                      {
+ 121   3                          Data[i] = UART_Recv_Buff[i];
+ 122   3                              ++i;
+ 123   3                      }
+ 124   2                      Data[i] = '\0';
+ 125   2                      UART_Recv_Buff[0] = '\0';//拷贝完成，清空缓冲区
+ 126   2              return i;
+ 127   2              }
+ 128   1              return 0;       
+ 129   1      }
+ 130          /*
+ 131          *1.函数名：UART_Interrupt
+ 132          *2.描述：UART串口中断函数
+ 133          *3.输入：无
+ 134          *4.输出：无
+ 135          *5.说明：接收到PC机发来的一个字节后中断，把接收到的数据移入接收缓冲区,'#'表示结束
+ 136          */
+ 137          void UART_Interrupt() interrupt 4
+ 138          {
+ 139   1          static int i=0;
+ 140   1          if(RI)
+ 141   1              {
+ 142   2                      RI = 0;
+ 143   2                      UART_Recv_Data = SBUF;  
+ 144   2                      if(UART_Recv_Data != '#')
+ 145   2                      {
+ 146   3                              UART_Recv_Buff[i++] = UART_Recv_Data;                   
+ 147   3                      }
+ 148   2                      else
+ 149   2                      {
+ 150   3                        cmd_finish = 1;
+ 151   3                        UART_Recv_Buff[i] = '\0';//添加字符串结束标记，以便操作
+ 152   3                        i = 0;
+ 153   3                      }
+ 154   2              }
+ 155   1              else if(TI)
+ 156   1              {
+ 157   2                  TI = 0;
+ 158   2              }
+ 159   1      }
+ 160          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    293    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     14      11
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

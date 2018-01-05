@@ -1,0 +1,122 @@
+C51 COMPILER V9.02   MAIN                                                                  01/05/2018 20:43:11 PAGE 1   
+
+
+C51 COMPILER V9.02, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE source\main.c BROWSE DEBUG OBJECTEXTEND PRINT(.\main.lst) OBJECT(main.obj)
+
+line level    source
+
+   1          #define _UART_C
+   2          #define _MCP2515_C
+   3          #include"./include/UART.h"
+   4          #include"./include/MCP2515.h"
+   5          #include"./include/config.h"
+   6          
+   7          static unsigned char PC_Cmd[10];//PC机发给MCU的命令
+   8          static unsigned char CAN_Cmd[10];//MCU从CAN总线读回的命令
+   9          static code unsigned  char err1[] = "faile write to MCP2515_1\r\n";
+  10          static code unsigned  char err2[] = "faile read from MCP2515_2\r\n";
+  11          static code unsigned  char err3[] = "no recieve cmd\r\n";
+  12          static code unsigned  char msg1[] = "\r\nys# ";
+  13          bit CAN_Flag = 0;
+  14          /*
+  15          *1.函数名：EXTI1_init
+  16          *2.描述：配置外部中断1
+  17          *3.输入：无
+  18          *4.输出：无
+  19          *5.说明：
+  20          */
+  21          void EXTI1_init()
+  22          {
+  23   1               IT1 = 1;//触发方式为下降沿触发
+  24   1               ET0 = 1;
+  25   1               EA = 1;
+  26   1      }
+  27          
+  28          /*
+  29          *1. 函数名：main
+  30          *2. 描述：实现程序的主流程
+  31          *3. 输入：无
+  32          *4. 输出：无
+  33          *5. 返回值：无
+  34          *6. 说明：调用各个初始化函数，主循环中实现从PC机获取数据，发给MCP2515_1, 
+  35          *   再从MCP2515_2获取数据，发给PC机，PC机传给MCU的命令以'#'结束，不计入
+  36          *   命令长度，也不在CAN总线上传输。
+  37          */
+  38          
+  39          void main()
+  40          {
+  41   1          unsigned char CmdLen;
+  42   1              Uart_Init(); //初始化完串口，就可以和PC机通信
+  43   1              EXTI1_init();
+  44   1              MCP2515_Init(1);
+  45   1              MCP2515_Init(2);
+  46   1              while(1)
+  47   1              {
+  48   2                  UART_Send_Promt(msg1);//提示用户输入命令，命令以'#'结束
+  49   2                      CmdLen = UART_Recv_CMD(PC_Cmd);//从UART缓冲区机获取命令
+  50   2                      
+  51   2                      /*没从缓冲区读到命令,向PC机报告错误*/
+  52   2                      if(CmdLen<1)
+  53   2                      {
+  54   3                          UART_Send_Data(err3,sizeof(err3));  
+  55   3                              continue;
+C51 COMPILER V9.02   MAIN                                                                  01/05/2018 20:43:11 PAGE 2   
+
+  56   3                      }
+  57   2                      //UART_Send_Data(PC_CMD,sizeof(PC_CMD));
+  58   2                      
+  59   2                      if(MCP2515_Sender(PC_Cmd,1)<1)//向MCP2515_1写数据
+  60   2                      {
+  61   3                           UART_Send_Data(err1,sizeof(err1)); //向PC机报告错误
+  62   3                               continue;
+  63   3                      }
+  64   2                      /*等待接收到CAN总线的数据才退出*/
+  65   2                      while(1)
+  66   2                      {
+  67   3                         if(CAN_Flag)
+  68   3                         {
+  69   4                                  CAN_Flag = 0;
+  70   4                                      if(MCP2515_Recver(CAN_Cmd,2)<1)//读取MCP2515_2的数据
+  71   4                                      {
+  72   5                                          UART_Send_Data(err2,sizeof(err2));//读取失败，发送错误回PC
+  73   5                                              break;
+  74   5                                      }
+  75   4                                      else
+  76   4                                      {
+  77   5                                           UART_Send_Data(CAN_Cmd,sizeof(CAN_Cmd));//把从CAN总线读取的命令送回PC
+  78   5                                               break;
+  79   5                                      }
+  80   4      
+  81   4                         }
+  82   3                      }
+  83   2                      
+  84   2              }
+  85   1      }
+  86          
+  87          /*MCP2515_2发出接受中断*/
+  88          void EXIT1_Inetrrupt()  interrupt 2
+  89          {
+  90   1                CAN_Flag = 1;
+  91   1      }
+  92          
+  93          
+  94          
+  95          
+  96          
+  97          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    135    ----
+   CONSTANT SIZE    =     79    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     20    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
