@@ -8,6 +8,7 @@ extern unsigned char UART_Send_Data(unsigned char Data[],unsigned char len);
 extern void UART_Send_Promt(unsigned char* prompt);
 extern unsigned char UART_Recv_CMD(unsigned char Data[]);
 extern void delaynms(unsigned int i);
+extern void Uart_Send_Byte(unsigned char Data);
 #endif
 
 #endif

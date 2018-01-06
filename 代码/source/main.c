@@ -8,8 +8,9 @@ static unsigned char PC_Cmd[10];//PC机发给MCU的命令
 static unsigned char CAN_Cmd[10];//MCU从CAN总线读回的命令
 static code unsigned  char err1[] = "faile write to MCP2515_1\r\n";
 static code unsigned  char err2[] = "faile read from MCP2515_2\r\n";
-static code unsigned  char err3[] = "no recieve cmd\r\n";
+static code unsigned  char err3[] = "no recieve cmd";
 static code unsigned  char msg1[] = "\r\nys# ";
+static code unsigned  char msg2[] = "unknow cmd";
 bit CAN_Flag = 0;
 /*
 *1.函数名：EXTI1_init
@@ -21,7 +22,7 @@ bit CAN_Flag = 0;
 void EXTI1_init()
 {
 	 IT1 = 1;//触发方式为下降沿触发
-	 ET0 = 1;
+	 EX1 = 1;
 	 EA = 1;
 }
 
@@ -38,7 +39,7 @@ void EXTI1_init()
 
 void main()
 {
-    unsigned char CmdLen;
+    unsigned char CmdLen=0;
 	Uart_Init(); //初始化完串口，就可以和PC机通信
 	EXTI1_init();
 	MCP2515_Init(1);
@@ -46,16 +47,14 @@ void main()
 	while(1)
 	{
 	    UART_Send_Promt(msg1);//提示用户输入命令，命令以'#'结束
-		CmdLen = UART_Recv_CMD(PC_Cmd);//从UART缓冲区机获取命令
-		
+		CmdLen = UART_Recv_CMD(PC_Cmd);//从UART缓冲区机获取命令	
 		/*没从缓冲区读到命令,向PC机报告错误*/
 	   	if(CmdLen<1)
 		{
 		    UART_Send_Data(err3,sizeof(err3));	
 			continue;
 		}
-		//UART_Send_Data(PC_CMD,sizeof(PC_CMD));
-		
+		//UART_Send_Data(msg2,sizeof(msg2));
 		if(MCP2515_Sender(PC_Cmd,1)<1)//向MCP2515_1写数据
 		{
 		     UART_Send_Data(err1,sizeof(err1));	//向PC机报告错误
@@ -74,7 +73,8 @@ void main()
 				}
 				else
 				{
-				     UART_Send_Data(CAN_Cmd,sizeof(CAN_Cmd));//把从CAN总线读取的命令送回PC
+				     UART_Send_Data("CANcmd:",sizeof(CAN_Cmd));
+					 UART_Send_Data(CAN_Cmd,sizeof(CAN_Cmd));//把从CAN总线读取的命令送回PC
 					 break;
 				}
 

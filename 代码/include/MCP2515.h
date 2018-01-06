@@ -173,6 +173,8 @@
 #define RX1IE        (0x01<<1)
 /*CAN¿ØÖÆ¼Ä´æÆ÷*/
 #define REQOP_NORM    (0x00<<5)
+#define REQOP_CONF    (0x4<<5)
+#define REQOP_LOOP    (0x2<<5)
 #define OSM			  (0x00<<3)
 #define CLKEN_D		  (0x00<<2)
 

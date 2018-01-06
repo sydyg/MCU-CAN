@@ -66,7 +66,7 @@ void Uart_Send_Byte(unsigned char Data)
 */
 unsigned char UART_Send_Data(unsigned char Data[],unsigned char len)
 {
-      int i;
+      int i=0;
 	  if(len>0)
 	  {
 	   while(Data[i]!='\0')

@@ -1,4 +1,4 @@
-C51 COMPILER V9.02   MCP2515                                                               01/05/2018 20:43:11 PAGE 1   
+C51 COMPILER V9.02   MCP2515                                                               01/06/2018 16:05:12 PAGE 1   
 
 
 C51 COMPILER V9.02, COMPILATION OF MODULE MCP2515
@@ -29,13 +29,13 @@ line level    source
   19   1            if(chipnum==1)
   20   1                {
   21   2                  CS1 = 0; 
-  22   2                  SPI_Send_Byte(CAN_RESET,chipnum);
+  22   2                  SPI_Send_Byte(CAN_RESET,1);
   23   2                      CS1 = 1;
   24   2                }
   25   1                else if(chipnum==2)
   26   1                {
   27   2                  CS2 = 0; 
-  28   2                  SPI_Send_Byte(CAN_RESET,chipnum);
+  28   2                  SPI_Send_Byte(CAN_RESET,2);
   29   2                      CS2 = 1;
   30   2                }
   31   1      }
@@ -49,174 +49,180 @@ line level    source
   39          */
   40          void MCP2515_Init(unsigned char chipnum)
   41          {
-  42   1          unsigned char canstate;
-  43   1              /*初始化过程*/
-  44   1              /*1.复位*/
-  45   1              MCP2515_Reset(chipnum);
-  46   1              delaynms(1);
-  47   1              /*2.设置波特率和重同步宽度
-  48   1              * 设总线速率=500KBps,Fosc=8MHz,每位20us=20TQ，每个TQ=1us，
-  49   1              * TQ=2*BRP/Fosc,则BRP=4，取同步段=1TQ，传播段=3TQ，PS1=8TQ，PS2=8TQ
-  50   1              * SJW=2TQ          
-  51   1              */
-  52   1              MCP2515_Write_Byte(CNF1,BRP|SJW_2TQ,chipnum);
-  53   1              /*3.设置位时间*/
-  54   1              MCP2515_Write_Byte(CNF2,BTLMODE|SAM_1|PHSEG1_8TQ|PRSEG_3TQ,chipnum);
-C51 COMPILER V9.02   MCP2515                                                               01/05/2018 20:43:11 PAGE 2   
+  42   1          unsigned char canstate=0;
+  43   1              /*1.复位*/
+  44   1              MCP2515_Reset(chipnum); 
+  45   1              delaynms(1);
+  46   1              /*初始化过程*/
+  47   1              MCP2515_Write_Byte(CANCTRL,REQOP_CONF|OSM|CLKEN_D,chipnum);
+  48   1              //delaynms(1);
+  49   1              canstate = MCP2515_Read_Byte(CANSTAT,chipnum);
+  50   1              Uart_Send_Byte((canstate>>4)+0x30);
+  51   1              /*2.设置波特率和重同步宽度
+  52   1              * 设总线速率=500KBps,Fosc=8MHz,每位20us=20TQ，每个TQ=1us，
+  53   1              * TQ=2*BRP/Fosc,则BRP=4，取同步段=1TQ，传播段=3TQ，PS1=8TQ，PS2=8TQ
+  54   1              * SJW=2TQ          
+C51 COMPILER V9.02   MCP2515                                                               01/06/2018 16:05:12 PAGE 2   
 
-  55   1              MCP2515_Write_Byte(CNF3,SOF|WAKFIL|PHSEG2_8TQ,chipnum);
-  56   1              /*5.设置发送缓冲器0*/
-  57   1              MCP2515_Write_Byte(TXB0CTRL,TXP,chipnum);
-  58   1              MCP2515_Write_Byte(TXB0SIDH,SIDH,chipnum);
-  59   1              MCP2515_Write_Byte(TXB0SIDL,SIDL,chipnum);
-  60   1              /*6.清空接收缓冲器0的标准帧标识符*/
-  61   1              
-  62   1              MCP2515_Write_Byte(RXB0SIDH,0x00,chipnum);
-  63   1              MCP2515_Write_Byte(RXB0SIDL,0x00,chipnum);
-  64   1              /*7.设置接收缓冲器0控制寄存器*/
-  65   1              MCP2515_Write_Byte(RXB0CTRL,RXM|FILHIT,chipnum);
-  66   1              /*8.设置接收缓冲器0的验收滤波器,11位标识符设为11111111000B*/
-  67   1              MCP2515_Write_Byte(RXF0SIDH,SIDH,chipnum);
-  68   1              MCP2515_Write_Byte(RXF0SIDL,SIDL,chipnum);
-  69   1              /*9.设置接收缓冲器0的屏蔽寄存器,所有位都不验证，即可以接受所有帧*/
-  70   1              MCP2515_Write_Byte(RXM0SIDH,0xFF,chipnum);
-  71   1              MCP2515_Write_Byte(RXM0SIDL,0xFF,chipnum);
-  72   1              /*10.配置中断使能寄存器*/
-  73   1              MCP2515_Write_Byte(CANINTE,RX0IE,chipnum);
-  74   1              /*11.配置中断标志寄存器*/
-  75   1              MCP2515_Write_Byte(CANINTF,0x00,chipnum);
-  76   1              /*12.进入正常模式*/
-  77   1              MCP2515_Write_Byte(CANCTRL,REQOP_NORM|OSM|CLKEN_D,chipnum);
-  78   1              /*13.确认进入正常模式*/
-  79   1              canstate = MCP2515_Read_Byte(CANSTAT,chipnum);
-  80   1              /*未进入正常模式，重新再进一次*/
-  81   1              if((canstate&(0x07<<5))) //
-  82   1              {
-  83   2                      MCP2515_Write_Byte(CANCTRL,REQOP_NORM|OSM|CLKEN_D,chipnum);
-  84   2              }
-  85   1      }
-  86          /*
-  87          1.函数名：MCP2515_Sender
-  88          2.描述：MCU向MCP2515发送数据
-  89          3.输入：unsigned char Data[]:要发送的数据,以'\0'结束,unsigned char chipnum:芯片号
-  90          4.输出：unsigned char len:发送的字节数
-  91          5.说明：MCU向MCP2515发送数据
-  92          */
-  93          unsigned char MCP2515_Sender(unsigned char Data[],unsigned char chipnum)
-  94          {
-  95   1               unsigned char i=0;
-  96   1               /*非空才发*/
-  97   1               if(Data[0]!='\0')
-  98   1               {
-  99   2                       while(Data[i]!='\0')
- 100   2                       {
- 101   3                            MCP2515_Write_Byte(TXB0D0+i,Data[i],chipnum);
- 102   3                                ++i;
- 103   3                       }
- 104   2                       MCP2515_Write_Byte(TXB0DLC,i,chipnum);//向MCP2515告知要发送的字节数
- 105   2                       MCP2515_Write_Byte(TXB0CTRL,TXREQ|TXP,1);//请求发送，且不破坏优先级
- 106   2                       return i;
- 107   2               }
- 108   1               return 0;
- 109   1      }
- 110          
- 111          /*
- 112          1.函数名：MCP2515_Recver
- 113          2.描述：MCU接收MCP2515发送数据
- 114          3.输入：unsigned char Data[]:数据缓冲区,unsigned char chipnum:芯片号
- 115          4.输出：unsigned char len
- 116          5.说明：MCU接收MCP2515发送数据
-C51 COMPILER V9.02   MCP2515                                                               01/05/2018 20:43:11 PAGE 3   
+  55   1              */
+  56   1              MCP2515_Write_Byte(CNF1,BRP|SJW_2TQ,chipnum);
+  57   1              /*3.设置位时间*/
+  58   1              MCP2515_Write_Byte(CNF2,BTLMODE|SAM_1|PHSEG1_8TQ|PRSEG_3TQ,chipnum);
+  59   1              MCP2515_Write_Byte(CNF3,SOF|WAKFIL|PHSEG2_8TQ,chipnum);
+  60   1              /*5.设置发送缓冲器0*/
+  61   1              MCP2515_Write_Byte(TXB0CTRL,TXP,chipnum);
+  62   1              MCP2515_Write_Byte(TXB0SIDH,SIDH,chipnum);
+  63   1              MCP2515_Write_Byte(TXB0SIDL,SIDL,chipnum);
+  64   1              /*6.清空接收缓冲器0的标准帧标识符*/
+  65   1              
+  66   1              MCP2515_Write_Byte(RXB0SIDH,0x00,chipnum);
+  67   1              MCP2515_Write_Byte(RXB0SIDL,0x00,chipnum);
+  68   1              /*7.设置接收缓冲器0控制寄存器*/
+  69   1              MCP2515_Write_Byte(RXB0CTRL,RXM|FILHIT,chipnum);
+  70   1              /*8.设置接收缓冲器0的验收滤波器,11位标识符设为11111111000B*/
+  71   1              MCP2515_Write_Byte(RXF0SIDH,SIDH,chipnum);
+  72   1              MCP2515_Write_Byte(RXF0SIDL,SIDL,chipnum);
+  73   1              /*9.设置接收缓冲器0的屏蔽寄存器,所有位都不验证，即可以接受所有帧*/
+  74   1              MCP2515_Write_Byte(RXM0SIDH,0xFF,chipnum);
+  75   1              MCP2515_Write_Byte(RXM0SIDL,0xFF,chipnum);
+  76   1              /*10.配置中断使能寄存器*/
+  77   1              MCP2515_Write_Byte(CANINTE,RX0IE,chipnum);
+  78   1              /*11.配置中断标志寄存器*/
+  79   1              MCP2515_Write_Byte(CANINTF,0x00,chipnum);
+  80   1              /*12.进入正常模式*/
+  81   1              MCP2515_Write_Byte(CANCTRL,REQOP_NORM|OSM|CLKEN_D,chipnum);
+  82   1              /*13.确认进入正常模式*/
+  83   1              canstate = MCP2515_Read_Byte(CANSTAT,chipnum);
+  84   1              Uart_Send_Byte((canstate>>4)+0x30);
+  85   1              /*未进入正常模式，重新再进一次*/
+  86   1              if((canstate&(0x07<<5))) //
+  87   1              {
+  88   2                      MCP2515_Write_Byte(CANCTRL,REQOP_NORM|OSM|CLKEN_D,chipnum);
+  89   2              
+  90   2              }
+  91   1      }
+  92          /*
+  93          1.函数名：MCP2515_Sender
+  94          2.描述：MCU向MCP2515发送数据
+  95          3.输入：unsigned char Data[]:要发送的数据,以'\0'结束,unsigned char chipnum:芯片号
+  96          4.输出：unsigned char len:发送的字节数
+  97          5.说明：MCU向MCP2515发送数据
+  98          */
+  99          unsigned char MCP2515_Sender(unsigned char Data[],unsigned char chipnum)
+ 100          {
+ 101   1               unsigned char i=0;
+ 102   1               /*非空才发*/
+ 103   1               if(Data[0]!='\0')
+ 104   1               {
+ 105   2                       while(Data[i]!='\0')
+ 106   2                       {
+ 107   3                            MCP2515_Write_Byte(TXB0D0+i,Data[i],chipnum);
+ 108   3                                ++i;
+ 109   3                       }
+ 110   2                       MCP2515_Write_Byte(TXB0DLC,i,chipnum);//向MCP2515告知要发送的字节数
+ 111   2                       MCP2515_Write_Byte(TXB0CTRL,TXREQ|TXP,1);//请求发送，且不破坏优先级
+ 112   2                       return i;
+ 113   2               }
+ 114   1               return 0;
+ 115   1      }
+ 116          
+C51 COMPILER V9.02   MCP2515                                                               01/06/2018 16:05:12 PAGE 3   
 
- 117          */
- 118          unsigned char MCP2515_Recver(unsigned char Data[],unsigned char chipnum)
- 119          {
- 120   1               unsigned char len,i=0;
- 121   1               unsigned char canintf;  
- 122   1               canintf = MCP2515_Read_Byte(CANINTF,chipnum);//查询该芯片有无接收中断
- 123   1               if(canintf&0x01) //有接收中断请求才读取数据
- 124   1               {
- 125   2                   len =      MCP2515_Read_Byte(RXB0DLC,chipnum);
- 126   2                   len &= 0x0f;//保留数据长度位
- 127   2                       while(i<len)
- 128   2                       {
- 129   3                           Data[i] = MCP2515_Read_Byte(RXB0D0+i,chipnum);
- 130   3                               ++i;
- 131   3                       }
- 132   2                      MCP2515_Write_Byte(CANINTF,canintf&0xFE,chipnum);//清中断标志
- 133   2                      return len;
- 134   2               }
- 135   1               return 0;
- 136   1      }
- 137          
- 138          /*
- 139          *1.函数名：MCP2515_Write_Byte
- 140          *2. 描述：向MCP2515写一字节数据
- 141          *3. 输入：unsigned char Addr：要写的地址,unsigned char Data：要写的数据,
- 142                    unsigned char chipnum：选中的芯片
- 143          *4. 输出：无
- 144          *5. 返回值：无
- 145          *6. 说明：选中某个MCP2515芯片，然后向其写入数据
- 146          */
- 147          static void MCP2515_Write_Byte(unsigned char Addr,unsigned char Data,unsigned char chipnum)
- 148          {
- 149   1                if(chipnum==1)
- 150   1                {
- 151   2                        CS1 = 0;
- 152   2                        SPI_Send_Byte(CAN_WRITE,chipnum);//先发出写命令
- 153   2                        SPI_Send_Byte(Addr,chipnum);//再发出写地址
- 154   2                        SPI_Send_Byte(Data,chipnum);//最后是要写的数据
- 155   2                        CS1 = 1;
- 156   2                }
- 157   1                else if(chipnum==2)
- 158   1                {
- 159   2                        CS2 = 0;
- 160   2                        SPI_Send_Byte(CAN_WRITE,chipnum);//先发出写命令
- 161   2                        SPI_Send_Byte(Addr,chipnum);//再发出写地址
- 162   2                        SPI_Send_Byte(Data,chipnum);//最后是要写的数据
- 163   2                        CS2 = 1;
- 164   2                }
- 165   1      }
- 166          /*
- 167          *1.函数名：MCP2515_Read_Byte
- 168          *2. 描述：从MCP2515读一字节数据
- 169          *3. 输入：unsigned char Addr：要读的地址,unsigned char chipnum：选中的芯片
- 170          *4. 输出：Data：输出数据
- 171          *5. 返回值：无
- 172          *6. 说明：选中某个MCP2515芯片，然后向其写入数据
- 173          */
- 174          static unsigned char MCP2515_Read_Byte(unsigned char Addr,unsigned char chipnum)
- 175          {
- 176   1            unsigned char Data;
- 177   1            if(chipnum==1)
- 178   1                {
-C51 COMPILER V9.02   MCP2515                                                               01/05/2018 20:43:11 PAGE 4   
+ 117          /*
+ 118          1.函数名：MCP2515_Recver
+ 119          2.描述：MCU接收MCP2515发送数据
+ 120          3.输入：unsigned char Data[]:数据缓冲区,unsigned char chipnum:芯片号
+ 121          4.输出：unsigned char len
+ 122          5.说明：MCU接收MCP2515发送数据
+ 123          */
+ 124          unsigned char MCP2515_Recver(unsigned char Data[],unsigned char chipnum)
+ 125          {
+ 126   1               unsigned char len=0,i=0;
+ 127   1               unsigned char canintf=0;        
+ 128   1               canintf = MCP2515_Read_Byte(CANINTF,chipnum);//查询该芯片有无接收中断
+ 129   1               if(canintf&0x01) //有接收中断请求才读取数据
+ 130   1               {
+ 131   2                   len =      MCP2515_Read_Byte(RXB0DLC,chipnum);
+ 132   2                   len &= 0x0f;//保留数据长度位
+ 133   2                       while(i<len)
+ 134   2                       {
+ 135   3                           Data[i] = MCP2515_Read_Byte(RXB0D0+i,chipnum);
+ 136   3                               ++i;
+ 137   3                       }
+ 138   2                      MCP2515_Write_Byte(CANINTF,canintf&0xFE,chipnum);//清中断标志
+ 139   2                      return len;
+ 140   2               }
+ 141   1               return 0;
+ 142   1      }
+ 143          
+ 144          /*
+ 145          *1.函数名：MCP2515_Write_Byte
+ 146          *2. 描述：向MCP2515写一字节数据
+ 147          *3. 输入：unsigned char Addr：要写的地址,unsigned char Data：要写的数据,
+ 148                    unsigned char chipnum：选中的芯片
+ 149          *4. 输出：无
+ 150          *5. 返回值：无
+ 151          *6. 说明：选中某个MCP2515芯片，然后向其写入数据
+ 152          */
+ 153          static void MCP2515_Write_Byte(unsigned char Addr,unsigned char Data,unsigned char chipnum)
+ 154          {
+ 155   1                if(chipnum==1)
+ 156   1                {
+ 157   2                        CS1 = 0;
+ 158   2                        SPI_Send_Byte(CAN_WRITE,chipnum);//先发出写命令
+ 159   2                        SPI_Send_Byte(Addr,chipnum);//再发出写地址
+ 160   2                        SPI_Send_Byte(Data,chipnum);//最后是要写的数据
+ 161   2                        CS1 = 1;
+ 162   2                }
+ 163   1                else if(chipnum==2)
+ 164   1                {
+ 165   2                        CS2 = 0;
+ 166   2                        SPI_Send_Byte(CAN_WRITE,chipnum);//先发出写命令
+ 167   2                        SPI_Send_Byte(Addr,chipnum);//再发出写地址
+ 168   2                        SPI_Send_Byte(Data,chipnum);//最后是要写的数据
+ 169   2                        CS2 = 1;
+ 170   2                }
+ 171   1      }
+ 172          /*
+ 173          *1.函数名：MCP2515_Read_Byte
+ 174          *2. 描述：从MCP2515读一字节数据
+ 175          *3. 输入：unsigned char Addr：要读的地址,unsigned char chipnum：选中的芯片
+ 176          *4. 输出：Data：输出数据
+ 177          *5. 返回值：无
+ 178          *6. 说明：选中某个MCP2515芯片，然后向其写入数据
+C51 COMPILER V9.02   MCP2515                                                               01/06/2018 16:05:12 PAGE 4   
 
- 179   2                        CS1 = 0;
- 180   2                        SPI_Send_Byte(CAN_READ,chipnum);//先发出读命令
- 181   2                        SPI_Send_Byte(Addr,chipnum);//再发出读地址
- 182   2                        Data = SPI_Recv_Byte(chipnum);//读数据
- 183   2                        CS1 = 1;
- 184   2                }
- 185   1                else if(chipnum==2)
- 186   1                {
- 187   2                        CS2 = 0;
- 188   2                        SPI_Send_Byte(CAN_READ,chipnum);//先发出读命令
- 189   2                        SPI_Send_Byte(Addr,chipnum);//再发出读地址
- 190   2                        Data = SPI_Recv_Byte(chipnum);//读数据
- 191   2                        CS2 = 1;
- 192   2                }
- 193   1                return Data;
- 194   1      }
- 195          
- 196          
- 197          
- 198          
- 199          
+ 179          */
+ 180          static unsigned char MCP2515_Read_Byte(unsigned char Addr,unsigned char chipnum)
+ 181          {
+ 182   1            unsigned char Data=0;
+ 183   1            if(chipnum==1)
+ 184   1                {
+ 185   2                        CS1 = 0;
+ 186   2                        SPI_Send_Byte(CAN_READ,chipnum);//先发出读命令
+ 187   2                        SPI_Send_Byte(Addr,chipnum);//再发出读地址
+ 188   2                        Data = SPI_Recv_Byte(chipnum);//读数据
+ 189   2                        CS1 = 1;
+ 190   2                }
+ 191   1                else if(chipnum==2)
+ 192   1                {
+ 193   2                        CS2 = 0;
+ 194   2                        SPI_Send_Byte(CAN_READ,chipnum);//先发出读命令
+ 195   2                        SPI_Send_Byte(Addr,chipnum);//再发出读地址
+ 196   2                        Data = SPI_Recv_Byte(chipnum);//读数据
+ 197   2                        CS2 = 1;
+ 198   2                }
+ 199   1                return Data;
+ 200   1      }
+ 201          
+ 202          
+ 203          
+ 204          
+ 205          
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    500    ----
+   CODE SIZE        =    548    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----

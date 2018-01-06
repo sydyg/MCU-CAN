@@ -19,13 +19,13 @@ static void  MCP2515_Reset(unsigned char chipnum)
       if(chipnum==1)
 	  {
 	    CS1 = 0; 
-	    SPI_Send_Byte(CAN_RESET,chipnum);
+	    SPI_Send_Byte(CAN_RESET,1);
 		CS1 = 1;
 	  }
 	  else if(chipnum==2)
 	  {
 	    CS2 = 0; 
-	    SPI_Send_Byte(CAN_RESET,chipnum);
+	    SPI_Send_Byte(CAN_RESET,2);
 		CS2 = 1;
 	  }
 }
@@ -39,11 +39,15 @@ static void  MCP2515_Reset(unsigned char chipnum)
 */
 void MCP2515_Init(unsigned char chipnum)
 {
-    unsigned char canstate;
-	/*初始化过程*/
+    unsigned char canstate=0;
 	/*1.复位*/
-	MCP2515_Reset(chipnum);
+	MCP2515_Reset(chipnum);	
 	delaynms(1);
+	/*初始化过程*/
+	MCP2515_Write_Byte(CANCTRL,REQOP_CONF|OSM|CLKEN_D,chipnum);
+	//delaynms(1);
+	canstate = MCP2515_Read_Byte(CANSTAT,chipnum);
+	Uart_Send_Byte((canstate>>4)+0x30);
 	/*2.设置波特率和重同步宽度
 	* 设总线速率=500KBps,Fosc=8MHz,每位20us=20TQ，每个TQ=1us，
 	* TQ=2*BRP/Fosc,则BRP=4，取同步段=1TQ，传播段=3TQ，PS1=8TQ，PS2=8TQ
@@ -77,10 +81,12 @@ void MCP2515_Init(unsigned char chipnum)
 	MCP2515_Write_Byte(CANCTRL,REQOP_NORM|OSM|CLKEN_D,chipnum);
 	/*13.确认进入正常模式*/
 	canstate = MCP2515_Read_Byte(CANSTAT,chipnum);
+	Uart_Send_Byte((canstate>>4)+0x30);
 	/*未进入正常模式，重新再进一次*/
 	if((canstate&(0x07<<5))) //
 	{
 	   	MCP2515_Write_Byte(CANCTRL,REQOP_NORM|OSM|CLKEN_D,chipnum);
+	
 	}
 }
 /*
@@ -117,10 +123,10 @@ unsigned char MCP2515_Sender(unsigned char Data[],unsigned char chipnum)
 */
 unsigned char MCP2515_Recver(unsigned char Data[],unsigned char chipnum)
 {
-	 unsigned char len,i=0;
-	 unsigned char canintf;	 
-	 canintf = MCP2515_Read_Byte(CANINTF,chipnum);//查询该芯片有无接收中断
-	 if(canintf&0x01) //有接收中断请求才读取数据
+	 unsigned char len=0,i=0;
+	 unsigned char canintf=0;	 
+	 canintf = MCP2515_Read_Byte(CANINTF,chipnum);//查询该芯片哪个接受缓冲区有数据
+	 if(canintf&0x01) //RXB0有数据，读取数据
 	 {
 	     len = 	MCP2515_Read_Byte(RXB0DLC,chipnum);
 	     len &= 0x0f;//保留数据长度位
@@ -173,7 +179,7 @@ static void MCP2515_Write_Byte(unsigned char Addr,unsigned char Data,unsigned ch
 */
 static unsigned char MCP2515_Read_Byte(unsigned char Addr,unsigned char chipnum)
 {
-      unsigned char Data;
+      unsigned char Data=0;
       if(chipnum==1)
 	  {
 		  CS1 = 0;

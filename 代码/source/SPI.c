@@ -12,7 +12,7 @@
 */
 static void SPI_Send_Byte1(unsigned char Data)
 {
-	 int i;	 
+	 int i=0;	 
 	 for(i=0;i<8;++i)
 	 {
 		 SCK1 = 0;
@@ -23,6 +23,7 @@ static void SPI_Send_Byte1(unsigned char Data)
 		 SCK1 = 1;
 		 Data<<=1;
 	 }
+	 SCK1 = 0;
 }
 
 /*
@@ -35,7 +36,7 @@ static void SPI_Send_Byte1(unsigned char Data)
 */
 static void SPI_Send_Byte2(unsigned char Data)
 {
-	 int i;	 
+	 int i=0;	 
 	 for(i=0;i<8;++i)
 	 {
 		 SCK2 = 0;
@@ -46,6 +47,7 @@ static void SPI_Send_Byte2(unsigned char Data)
 		 SCK2 = 1;
 		 Data<<=1;
 	 }
+	 SCK1 = 0;
 }
 
 /*
@@ -53,20 +55,20 @@ static void SPI_Send_Byte2(unsigned char Data)
 *2.描述：从SPI总线接收一字节数据
 *3.输入：无
 *4.输出：data
-*5.说明：利用SPI协议实现数据接收，主机产生一个下降沿让从机发出数据。
+*5.说明：利用SPI协议实现数据接收，主机产生一个上升降沿让从机发出数据。
 *  先暂时写成只针对MCP2515_1 
 */
 static unsigned char SPI_Recv_Byte1()
 {
-    unsigned char Data;
-	int i;
-	SCK1 = 1;
+    unsigned char Data=0;
+	int i=0;
+	SCK1 = 0;
 	for(i=0;i<8;++i)
 	{
-	    SCK1 = 0;
+	    SCK1 = 1;			
 		Data<<=1;
 		Data |= SO1;
-		SCK1 = 1;		
+		SCK1 = 0;		
 	}
 	return Data;
 }
@@ -81,15 +83,15 @@ static unsigned char SPI_Recv_Byte1()
 */
 static unsigned char SPI_Recv_Byte2()
 {
-    unsigned char Data;
-	int i;
-	SCK2 = 1;
+    unsigned char Data=0;
+	int i=0;
+	SCK2 = 0;
 	for(i=0;i<8;++i)
 	{
-	    SCK2 = 0;
+	    SCK2 = 1;
 		Data<<=1;
-		Data |= SO2;
-		SCK2 = 1;		
+		Data |= SO2;	
+		SCK2 = 0;		
 	}
 	return Data;
 }
@@ -118,7 +120,7 @@ void SPI_Send_Byte(unsigned char Data,unsigned char chipnum)
 */
 unsigned char SPI_Recv_Byte(unsigned char chipnum)
 {
-    unsigned char Data;
+    unsigned char Data=0;
     if(chipnum==1)
 	  Data = SPI_Recv_Byte1();
     else if(chipnum==2)
